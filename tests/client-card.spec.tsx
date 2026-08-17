@@ -19,8 +19,8 @@ afterEach(() => {
 })
 
 describe('CodexSearchCard', () => {
-  it('renders exactly the three requested fields, warning, and append action', () => {
-    let state: CodexCardState = {
+  it('renders exactly the three requested fields and the endpoint guidance', () => {
+    const state: CodexCardState = {
       available: true,
       writable: true,
       loading: false,
@@ -31,14 +31,20 @@ describe('CodexSearchCard', () => {
       endpoint: 'http://localhost:8080/v1',
       model: '',
       apiKey: '',
+      clearApiKey: false,
       apiKeyConfigured: false,
       apiKeyWritable: true,
+      credentialSource: 'independent',
+      openAIReuse: { available: true, endpoint: 'https://gateway.example/alpha/search' },
     }
     const edit = vi.fn()
     const props = {
       t: (key: keyof typeof zh) => zh[key],
       useCodexSearchCard: (selector: (value: CodexCardState) => unknown) => selector(state),
       edit,
+      reuseOpenAI: vi.fn(),
+      useIndependentCredential: vi.fn(),
+      restoreDefaults: vi.fn(),
       save: vi.fn(),
       discard: vi.fn(),
     } as unknown as CodexSearchCardProps
@@ -56,16 +62,87 @@ describe('CodexSearchCard', () => {
     ])
     expect(container.textContent).toContain('连接未加密')
     expect(container.textContent).toContain('留空时使用当前会话模型')
-    const append = [...container.querySelectorAll('button')]
-      .find(button => button.textContent?.includes('追加 /alpha/search')) as HTMLButtonElement
-    expect(append.disabled).toBe(false)
-    act(() => { append.click() })
-    expect(edit).toHaveBeenCalledWith('endpoint', 'http://localhost:8080/v1/alpha/search')
+    expect(container.textContent).toContain('填写完整接口 URL；Codex 默认路径为 /alpha/search。')
+    expect(container.textContent).not.toContain('追加 /alpha/search')
+    expect(edit).not.toHaveBeenCalled()
+  })
 
-    state = { ...state, endpoint: 'http://localhost:8080/v1/alpha/search' }
+  it('switches between reusable OpenAI and independent credentials', () => {
+    let state: CodexCardState = {
+      available: true,
+      writable: true,
+      loading: false,
+      saving: false,
+      dirty: false,
+      failure: null,
+      revision: 2,
+      endpoint: 'https://old.example/alpha/search',
+      model: 'old-model',
+      apiKey: '',
+      clearApiKey: false,
+      apiKeyConfigured: false,
+      apiKeyWritable: true,
+      credentialSource: 'independent',
+      openAIReuse: { available: true, endpoint: 'https://gateway.example/alpha/search' },
+    }
+    const reuseOpenAI = vi.fn()
+    const useIndependentCredential = vi.fn()
+    const restoreDefaults = vi.fn()
+    const props = {
+      t: (key: keyof typeof zh) => zh[key],
+      useCodexSearchCard: (selector: (value: CodexCardState) => unknown) => selector(state),
+      edit: vi.fn(),
+      reuseOpenAI,
+      useIndependentCredential,
+      restoreDefaults,
+      save: vi.fn(),
+      discard: vi.fn(),
+    } as unknown as CodexSearchCardProps
+    const container = document.createElement('div')
+    const root = createRoot(container)
+    roots.push(root)
     act(() => { root.render(createElement(CodexSearchCard, props)) })
-    const updatedAppend = [...container.querySelectorAll('button')]
-      .find(button => button.textContent?.includes('追加 /alpha/search')) as HTMLButtonElement
-    expect(updatedAppend.disabled).toBe(true)
+    act(() => { (container.querySelector('button[aria-expanded="false"]') as HTMLButtonElement).click() })
+
+    const reuse = [...container.querySelectorAll('button')]
+      .find(button => button.textContent === 'OpenAI') as HTMLButtonElement
+    expect(reuse.disabled).toBe(false)
+    expect(reuse.getAttribute('aria-pressed')).toBe('false')
+    act(() => { reuse.click() })
+    expect(reuseOpenAI).toHaveBeenCalledOnce()
+
+    state = {
+      ...state,
+      credentialSource: 'openai',
+      endpoint: 'https://gateway.example/alpha/search',
+      model: '',
+      clearApiKey: false,
+      apiKeyConfigured: true,
+      apiKeyWritable: false,
+    }
+    act(() => { root.render(createElement(CodexSearchCard, props)) })
+    expect(container.querySelector('#codex-search-api-key')).toBeNull()
+    const independent = [...container.querySelectorAll('button')]
+      .find(button => button.textContent === '独立 Key') as HTMLButtonElement
+    expect(independent.getAttribute('aria-pressed')).toBe('false')
+    act(() => { independent.click() })
+    expect(useIndependentCredential).toHaveBeenCalledOnce()
+
+    const restore = [...container.querySelectorAll('button')]
+      .find(button => button.textContent === '恢复默认') as HTMLButtonElement
+    expect(restore.disabled).toBe(false)
+    act(() => { restore.click() })
+    expect(restoreDefaults).toHaveBeenCalledOnce()
+
+    state = {
+      ...state,
+      credentialSource: 'independent',
+      endpoint: '',
+      model: '',
+      apiKeyConfigured: false,
+    }
+    act(() => { root.render(createElement(CodexSearchCard, props)) })
+    expect((([...container.querySelectorAll('button')]
+      .find(button => button.textContent === '恢复默认')) as HTMLButtonElement).disabled).toBe(true)
   })
 })

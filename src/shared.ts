@@ -15,6 +15,16 @@ export interface CredentialView {
   readonly writable: boolean
 }
 
+export interface OpenAIReuseView {
+  readonly available: boolean
+  readonly active: boolean
+  readonly endpoint: string
+  readonly credential: CredentialView
+  readonly independentCredential: CredentialView
+}
+
+export type CredentialSource = 'independent' | 'openai'
+
 export interface CodexSettingsView {
   readonly available: boolean
   readonly writable: boolean
@@ -22,6 +32,7 @@ export interface CodexSettingsView {
   readonly endpoint: string
   readonly model: string
   readonly credential: CredentialView
+  readonly openAIReuse?: OpenAIReuseView
 }
 
 export function unavailableCodexSettingsView(): CodexSettingsView {
@@ -39,4 +50,6 @@ export interface CodexSettingsSave {
   readonly endpoint: string
   readonly model: string
   readonly apiKey?: string
+  readonly clearApiKey?: boolean
+  readonly credentialSource?: CredentialSource
 }

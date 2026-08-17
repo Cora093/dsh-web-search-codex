@@ -3,7 +3,6 @@ import { IconChevronDownOutline14 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import type { CodexCardFace } from './index.tsx'
-import { appendAlphaSearchPath, canAppendAlphaSearchPath } from './path.ts'
 import type { CodexLocaleKey } from './locales.ts'
 import css from './CodexSearchCard.module.css'
 
@@ -20,6 +19,22 @@ export function CodexSearchCard(props: CodexSearchCardProps) {
   const credentialWrite = state.apiKeyWritable && state.apiKey.trim() !== ''
   const saveDisabled = !state.dirty || state.saving || !state.writable && !credentialWrite
   const insecure = /^http:\/\//iu.test(state.endpoint.trim())
+  const usingOpenAI = state.credentialSource === 'openai'
+  const defaultsSelected = !usingOpenAI
+    && state.endpoint === ''
+    && state.model === ''
+    && state.apiKey === ''
+    && !state.apiKeyConfigured
+  const reuseUnavailable = state.openAIReuse.endpoint === ''
+    ? props.t('openAIUnavailable')
+    : props.t('openAICredentialMissing')
+  const credentialHintKey: CodexLocaleKey = usingOpenAI
+    ? 'openAIKeyActive'
+    : state.clearApiKey
+      ? 'apiKeyClearPending'
+      : state.apiKey.trim() !== ''
+        ? 'apiKeyPending'
+        : state.apiKeyConfigured ? 'apiKeyConfigured' : 'apiKeyMissing'
   const failureKey: CodexLocaleKey | undefined = state.failure === 'conflict'
     ? 'conflict'
     : state.failure === 'save' ? 'saveFailed' : undefined
@@ -45,42 +60,57 @@ export function CodexSearchCard(props: CodexSearchCardProps) {
             {!state.writable ? <p className={css.readOnly} role="status">{props.t('readOnly')}</p> : null}
             <div className={css.field}>
               <div className={css.fieldHead}>
-                <label className={css.label} htmlFor="codex-search-api-key">{props.t('apiKey')}</label>
-                <span className={state.apiKeyConfigured ? css.badge : css.badgeMuted}>
-                  {props.t(state.apiKeyConfigured ? 'configured' : 'notConfigured')}
-                </span>
+                {usingOpenAI
+                  ? <span className={css.label}>{props.t('apiKey')}</span>
+                  : <label className={css.label} htmlFor="codex-search-api-key">{props.t('apiKey')}</label>}
+                <div className={css.credentialModes} role="group" aria-label={props.t('credentialMode')}>
+                  <button
+                    type="button"
+                    className={`${css.credentialMode} ${usingOpenAI ? css.credentialModeActive : ''}`}
+                    aria-pressed={usingOpenAI}
+                    disabled={settingsDisabled || !usingOpenAI && !state.openAIReuse.available}
+                    title={!usingOpenAI && !state.openAIReuse.available ? reuseUnavailable : undefined}
+                    onClick={props.reuseOpenAI}
+                  >
+                    {props.t('openAIMode')}
+                  </button>
+                  <button
+                    type="button"
+                    className={`${css.credentialMode} ${!usingOpenAI ? css.credentialModeActive : ''}`}
+                    aria-pressed={!usingOpenAI}
+                    disabled={settingsDisabled}
+                    onClick={props.useIndependentCredential}
+                  >
+                    {props.t('independentMode')}
+                  </button>
+                </div>
               </div>
-              <input
-                id="codex-search-api-key"
-                className={css.input}
-                type="password"
-                autoComplete="off"
-                value={state.apiKey}
-                disabled={!state.apiKeyWritable || state.saving}
-                onChange={(event) => { props.edit('apiKey', event.target.value) }}
-              />
-              <p className={css.hint}>{props.t('apiKeyHint')}</p>
+              {usingOpenAI
+                ? null
+                : (
+                  <input
+                    id="codex-search-api-key"
+                    aria-label={props.t('apiKey')}
+                    className={css.input}
+                    type="password"
+                    autoComplete="off"
+                    value={state.apiKey}
+                    disabled={!state.apiKeyWritable || state.saving}
+                    onChange={(event) => { props.edit('apiKey', event.target.value) }}
+                  />
+                )}
+              <p className={css.hint} role="status">{props.t(credentialHintKey)}</p>
             </div>
             <div className={css.field}>
               <label className={css.label} htmlFor="codex-search-endpoint">{props.t('endpoint')}</label>
-              <div className={css.endpointRow}>
-                <input
-                  id="codex-search-endpoint"
-                  className={css.input}
-                  type="url"
-                  value={state.endpoint}
-                  disabled={settingsDisabled}
-                  onChange={(event) => { props.edit('endpoint', event.target.value) }}
-                />
-                <button
-                  type="button"
-                  className={css.append}
-                  disabled={settingsDisabled || !canAppendAlphaSearchPath(state.endpoint)}
-                  onClick={() => { props.edit('endpoint', appendAlphaSearchPath(state.endpoint)) }}
-                >
-                  {props.t('appendPath')}
-                </button>
-              </div>
+              <input
+                id="codex-search-endpoint"
+                className={css.input}
+                type="url"
+                value={state.endpoint}
+                disabled={settingsDisabled}
+                onChange={(event) => { props.edit('endpoint', event.target.value) }}
+              />
               {insecure ? <p className={css.warning} role="status">{props.t('insecure')}</p> : null}
               <p className={css.hint}>{props.t('endpointHint')}</p>
             </div>
@@ -98,6 +128,14 @@ export function CodexSearchCard(props: CodexSearchCardProps) {
             </div>
             <div className={css.footer}>
               {failureKey === undefined ? null : <p className={css.failed} role="status">{props.t(failureKey)}</p>}
+              <button
+                type="button"
+                className={css.restore}
+                disabled={settingsDisabled || defaultsSelected}
+                onClick={props.restoreDefaults}
+              >
+                {props.t('restoreDefaults')}
+              </button>
               <button
                 type="button"
                 className={css.discard}

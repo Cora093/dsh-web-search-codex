@@ -4,6 +4,145 @@ import { CodexSettingsApiError } from '../src/client/api.ts'
 import { CodexCardController } from '../src/client/controller.ts'
 
 describe('CodexCardController', () => {
+  it('stages and saves the reusable OpenAI endpoint and credential reference', async () => {
+    const view = {
+      available: true,
+      writable: true,
+      revision: 5,
+      endpoint: 'https://old.example/alpha/search',
+      model: 'old-model',
+      credential: { configured: false, writable: true },
+      openAIReuse: {
+        available: true,
+        active: false,
+        endpoint: 'https://gateway.example/alpha/search',
+        credential: { configured: true, writable: true },
+        independentCredential: { configured: false, writable: true },
+      },
+    }
+    const get = vi.fn(async () => view)
+    const save = vi.fn(async () => ({
+      ...view,
+      revision: 6,
+      endpoint: 'https://gateway.example/alpha/search',
+      model: '',
+      credential: { configured: true, writable: true },
+      openAIReuse: { ...view.openAIReuse, active: true },
+    }))
+    const controller = new CodexCardController({ get, save } satisfies CodexSettingsApi)
+    await controller.load()
+    controller.edit('apiKey', 'discard-this-draft')
+
+    controller.reuseOpenAI()
+
+    expect(controller.getSnapshot()).toMatchObject({
+      credentialSource: 'openai',
+      endpoint: 'https://gateway.example/alpha/search',
+      model: '',
+      apiKey: '',
+      apiKeyConfigured: true,
+      apiKeyWritable: false,
+      dirty: true,
+    })
+    await controller.save()
+    expect(save).toHaveBeenCalledWith({
+      expectedRevision: 5,
+      endpoint: 'https://gateway.example/alpha/search',
+      model: '',
+      credentialSource: 'openai',
+    }, expect.any(AbortSignal))
+  })
+
+  it('switches an active OpenAI reuse configuration back to an independent credential', async () => {
+    const view = {
+      available: true,
+      writable: true,
+      revision: 8,
+      endpoint: 'https://gateway.example/alpha/search',
+      model: '',
+      credential: { configured: true, writable: true },
+      openAIReuse: {
+        available: true,
+        active: true,
+        endpoint: 'https://gateway.example/alpha/search',
+        credential: { configured: true, writable: true },
+        independentCredential: { configured: false, writable: true },
+      },
+    }
+    const get = vi.fn(async () => view)
+    const save = vi.fn(async () => ({
+      ...view,
+      revision: 9,
+      credential: { configured: false, writable: true },
+      openAIReuse: { ...view.openAIReuse, active: false },
+    }))
+    const controller = new CodexCardController({ get, save } satisfies CodexSettingsApi)
+    await controller.load()
+
+    controller.useIndependentCredential()
+    expect(controller.getSnapshot()).toMatchObject({
+      credentialSource: 'independent',
+      apiKeyConfigured: false,
+      apiKeyWritable: true,
+      dirty: true,
+    })
+    await controller.save()
+    expect(save).toHaveBeenCalledWith({
+      expectedRevision: 8,
+      endpoint: 'https://gateway.example/alpha/search',
+      model: '',
+      credentialSource: 'independent',
+    }, expect.any(AbortSignal))
+  })
+
+  it('stages restoring defaults and clearing the independent credential', async () => {
+    const view = {
+      available: true,
+      writable: true,
+      revision: 10,
+      endpoint: 'https://gateway.example/alpha/search',
+      model: 'gpt-5.2',
+      credential: { configured: true, writable: true },
+      openAIReuse: {
+        available: true,
+        active: true,
+        endpoint: 'https://gateway.example/alpha/search',
+        credential: { configured: true, writable: true },
+        independentCredential: { configured: true, writable: true },
+      },
+    }
+    const get = vi.fn(async () => view)
+    const save = vi.fn(async () => ({
+      ...view,
+      revision: 11,
+      endpoint: '',
+      model: '',
+      openAIReuse: { ...view.openAIReuse, active: false },
+    }))
+    const controller = new CodexCardController({ get, save } satisfies CodexSettingsApi)
+    await controller.load()
+
+    controller.restoreDefaults()
+
+    expect(controller.getSnapshot()).toMatchObject({
+      credentialSource: 'independent',
+      endpoint: '',
+      model: '',
+      apiKey: '',
+      apiKeyConfigured: false,
+      apiKeyWritable: true,
+      dirty: true,
+    })
+    await controller.save()
+    expect(save).toHaveBeenCalledWith({
+      expectedRevision: 10,
+      endpoint: '',
+      model: '',
+      credentialSource: 'independent',
+      clearApiKey: true,
+    }, expect.any(AbortSignal))
+  })
+
   it('stages, discards, and saves the three visible fields as one operation', async () => {
     const get = vi.fn(async () => ({
       available: true,

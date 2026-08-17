@@ -20,6 +20,9 @@ export interface CodexCardFace {
     codexSearchCard: SnapshotSource<CodexCardState>
   }
   edit(field: CardField, value: string): void
+  reuseOpenAI(): void
+  useIndependentCredential(): void
+  restoreDefaults(): void
   save(): void
   discard(): void
 }
@@ -41,6 +44,9 @@ export function apply(ctx: ClientContext): void {
     inject: (): CodexCardFace => ({
       hooks: { codexSearchCard: controller },
       edit: (field, value) => { controller.edit(field, value) },
+      reuseOpenAI: () => { controller.reuseOpenAI() },
+      useIndependentCredential: () => { controller.useIndependentCredential() },
+      restoreDefaults: () => { controller.restoreDefaults() },
       save: () => { void controller.save() },
       discard: () => { controller.discard() },
     }),

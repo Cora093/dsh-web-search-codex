@@ -56,6 +56,7 @@ interface CredentialServiceLike {
   describe(ref: ReturnType<typeof credentialRef>): Promise<{ configured: boolean; writable: boolean }>
   resolve(ref: ReturnType<typeof credentialRef>): Promise<{ value: string } | undefined>
   set(ref: ReturnType<typeof credentialRef>, value: string): Promise<void>
+  unset(ref: ReturnType<typeof credentialRef>): Promise<void>
 }
 
 function trustedHostsOf(ctx: Context): string[] {
@@ -83,6 +84,11 @@ function credentialFace(ctx: Context): CredentialsLike {
       if (credentials === undefined) throw new Error('credential store unavailable')
       await credentials.set(credentialRef(ref), value)
     },
+    unset: async (ref) => {
+      const credentials = service()
+      if (credentials === undefined) throw new Error('credential store unavailable')
+      await credentials.unset(credentialRef(ref))
+    },
   }
 }
 
@@ -94,14 +100,22 @@ function parseSave(payload: unknown): CodexSettingsSave {
   if (typeof record.expectedRevision !== 'number'
     || typeof record.endpoint !== 'string'
     || typeof record.model !== 'string'
-    || record.apiKey !== undefined && typeof record.apiKey !== 'string') {
+    || record.credentialSource !== undefined
+      && record.credentialSource !== 'independent'
+      && record.credentialSource !== 'openai'
+    || record.apiKey !== undefined && typeof record.apiKey !== 'string'
+    || record.clearApiKey !== undefined && typeof record.clearApiKey !== 'boolean') {
     throw new HostApiError('bad-request', 'invalid Codex search settings payload', 400)
   }
   return {
     expectedRevision: record.expectedRevision,
     endpoint: record.endpoint,
     model: record.model,
+    ...record.credentialSource === 'independent' || record.credentialSource === 'openai'
+      ? { credentialSource: record.credentialSource }
+      : {},
     ...typeof record.apiKey === 'string' ? { apiKey: record.apiKey } : {},
+    ...typeof record.clearApiKey === 'boolean' ? { clearApiKey: record.clearApiKey } : {},
   }
 }
 
