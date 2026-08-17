@@ -3,4 +3,3 @@ node_modules/
 *.tgz
 .playwright-cli/
 coverage/
-

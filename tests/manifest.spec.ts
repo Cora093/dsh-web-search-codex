@@ -5,6 +5,7 @@ import { CLIENT_SLOT_ID, PACKAGE_NAME } from '../src/shared.ts'
 
 interface PackageManifest {
   name: string
+  exports: Record<string, unknown>
   files: string[]
   dsh?: {
     bundle?: { patch?: string }
@@ -25,10 +26,9 @@ describe('published plugin manifest', () => {
     }
 
     expect(manifest.name).toBe(PACKAGE_NAME)
+    expect(manifest.exports).not.toHaveProperty('./src/*')
     expect(manifest.files).toEqual(expect.arrayContaining([
-      'lib/index.js',
-      'lib/invariant.js',
-      'lib/client.js',
+      'lib/*.js',
       'lib/types/**/*.d.ts',
       'dsh.bundle.patch',
     ]))

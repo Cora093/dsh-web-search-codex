@@ -24,6 +24,16 @@ export interface CodexSettingsView {
   readonly credential: CredentialView
 }
 
+export function unavailableCodexSettingsView(): CodexSettingsView {
+  return {
+    available: false,
+    writable: false,
+    endpoint: '',
+    model: '',
+    credential: { configured: false, writable: false },
+  }
+}
+
 export interface CodexSettingsSave {
   readonly expectedRevision: number
   readonly endpoint: string

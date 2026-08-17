@@ -31,11 +31,6 @@ export interface CodexSearchProviderOptions {
   readonly recordRequest?: (request: { endpoint: string; body: CodexSearchRequestBody }) => void
 }
 
-interface CodexSearchResponse {
-  readonly output?: unknown
-  readonly results?: unknown
-}
-
 function searchAborted(signal?: AbortSignal, fallback?: unknown): WebError {
   return new WebError('Codex search aborted', 'WEB_ABORTED', {
     cause: signal?.aborted === true ? signal.reason : fallback,
@@ -65,11 +60,21 @@ function abortable<T>(operation: Promise<T>, signal?: AbortSignal): Promise<T> {
   })
 }
 
-function mapResponse(payload: CodexSearchResponse): WebSearchResult {
+function mapResponse(payload: unknown): WebSearchResult {
+  if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) {
+    throw new WebError('Codex search returned an invalid response shape', 'CODEX_SEARCH_PROTOCOL_ERROR')
+  }
+  const response = payload as { readonly output?: unknown; readonly results?: unknown }
+  if (Object.hasOwn(response, 'output') && typeof response.output !== 'string') {
+    throw new WebError('Codex search returned a non-string output', 'CODEX_SEARCH_PROTOCOL_ERROR')
+  }
+  if (Object.hasOwn(response, 'results') && !Array.isArray(response.results)) {
+    throw new WebError('Codex search returned non-array results', 'CODEX_SEARCH_PROTOCOL_ERROR')
+  }
   const sources: WebSearchSource[] = []
   const seen = new Set<string>()
-  if (Array.isArray(payload.results)) {
-    for (const item of payload.results) {
+  if (Array.isArray(response.results)) {
+    for (const item of response.results) {
       if (typeof item !== 'object' || item === null) continue
       const { url: rawUrl, title } = item as { url?: unknown; title?: unknown }
       if (typeof rawUrl !== 'string') continue
@@ -90,8 +95,8 @@ function mapResponse(payload: CodexSearchResponse): WebSearchResult {
       })
     }
   }
-  const content = typeof payload.output === 'string' && payload.output.trim() !== ''
-    ? payload.output
+  const content = typeof response.output === 'string' && response.output.trim() !== ''
+    ? response.output
     : undefined
   if (content === undefined && sources.length === 0) {
     throw new WebError('Codex search returned no output or valid sources', 'CODEX_SEARCH_PROTOCOL_ERROR')
@@ -206,9 +211,9 @@ export class CodexSearchProvider implements WebSearchProvider {
         'CODEX_SEARCH_HTTP_ERROR',
       )
     }
-    let payload: CodexSearchResponse
+    let payload: unknown
     try {
-      payload = await response.json() as CodexSearchResponse
+      payload = await response.json()
     } catch (error: unknown) {
       if (_signal?.aborted === true || isAbortError(error)) throw searchAborted(_signal, error)
       throw new WebError(

@@ -7,4 +7,3 @@
       name: dsh-web-search-codex
       config:
         apiKeyEnv: CODEX_SEARCH_API_KEY
-

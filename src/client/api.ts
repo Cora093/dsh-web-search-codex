@@ -38,4 +38,3 @@ export function createCodexSettingsApi(): CodexSettingsApi {
     save: (input, signal) => call('settings.save', input, signal),
   }
 }
-

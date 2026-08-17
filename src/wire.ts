@@ -49,4 +49,3 @@ export function writeError(response: ServerResponse, error: unknown): void {
     error: { code: 'internal', message: 'Codex search settings request failed' },
   })
 }
-

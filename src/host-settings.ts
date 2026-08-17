@@ -1,4 +1,9 @@
-import type { CodexSettingsSave, CodexSettingsValue, CodexSettingsView } from './shared.ts'
+import {
+  unavailableCodexSettingsView,
+  type CodexSettingsSave,
+  type CodexSettingsValue,
+  type CodexSettingsView,
+} from './shared.ts'
 
 export interface SettingsDescriptorLike {
   readonly ns: string
@@ -38,13 +43,7 @@ export class HostSettingsController {
   async get(): Promise<CodexSettingsView> {
     const descriptor = this.descriptor()
     if (descriptor === undefined) {
-      return {
-        available: false,
-        writable: false,
-        endpoint: '',
-        model: '',
-        credential: { configured: false, writable: false },
-      }
+      return unavailableCodexSettingsView()
     }
     const value = this.value() ?? {}
     const ref = typeof value.apiKeyEnv === 'string' && value.apiKeyEnv !== ''

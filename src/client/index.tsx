@@ -46,4 +46,3 @@ export function apply(ctx: ClientContext): void {
     }),
   }, CodexSearchCard))
 }
-

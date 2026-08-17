@@ -13,9 +13,9 @@ import {
   DEFAULT_API_KEY_REF,
   HOST_API_PREFIX,
   SETTINGS_NAMESPACE,
+  unavailableCodexSettingsView,
   type CodexSettingsSave,
   type CodexSettingsValue,
-  type CodexSettingsView,
 } from './shared.ts'
 import { isTrustedApiRequest } from './trust-fence.ts'
 import { HostApiError, readJsonBody, writeError, writeJson, writeOk } from './wire.ts'
@@ -105,16 +105,6 @@ function parseSave(payload: unknown): CodexSettingsSave {
   }
 }
 
-function unavailableView(): CodexSettingsView {
-  return {
-    available: false,
-    writable: false,
-    endpoint: '',
-    model: '',
-    credential: { configured: false, writable: false },
-  }
-}
-
 export function apply(ctx: Context, config: Config = {}): void {
   let current = (): Config => config
   let settingsController: HostSettingsController | undefined
@@ -181,7 +171,7 @@ export function apply(ctx: Context, config: Config = {}): void {
       try {
         const payload = await readJsonBody(request)
         if (method === 'settings.get') {
-          writeOk(response, await settingsController?.get() ?? unavailableView())
+          writeOk(response, await settingsController?.get() ?? unavailableCodexSettingsView())
           return
         }
         if (method === 'settings.save') {

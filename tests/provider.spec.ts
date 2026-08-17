@@ -46,6 +46,28 @@ describe('CodexSearchProvider', () => {
     })
   })
 
+  it('inherits the current session model and generates a new id for every search', async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({ output: 'answer' })))
+    vi.stubGlobal('fetch', fetchMock)
+    const provider = new CodexSearchProvider(() => ({
+      endpoint: 'https://search.example/v1/alpha/search',
+      model: '  ',
+      apiKeyRef: 'CODEX_SEARCH_API_KEY',
+      resolveApiKey: async () => 'secret',
+      resolveSessionModel: () => ' session-model ',
+    }))
+
+    await provider.search({ query: 'first query' })
+    await provider.search({ query: 'second query' })
+
+    const bodies = fetchMock.mock.calls.map(([, init]) => JSON.parse(String(init?.body)) as {
+      id: string
+      model: string
+    })
+    expect(bodies.map(body => body.model)).toEqual(['session-model', 'session-model'])
+    expect(bodies[0]!.id).not.toBe(bodies[1]!.id)
+  })
+
   it('maps output and keeps the first source for each normalized HTTP URL', async () => {
     vi.stubGlobal('fetch', vi.fn<typeof fetch>(async () => new Response(JSON.stringify({
       output: 'source-backed answer',
@@ -200,6 +222,77 @@ describe('CodexSearchProvider', () => {
     expect(error).toMatchObject({ code: 'CODEX_SEARCH_INVALID_JSON' })
     expect(String(error)).not.toContain('not-json')
     expect(String(error)).not.toContain('top-secret')
+  })
+
+  it.each(['null', '[]'])(
+    'classifies a non-object JSON response as a protocol error: %s',
+    async (responseBody) => {
+      vi.stubGlobal('fetch', vi.fn<typeof fetch>(async () => new Response(responseBody, { status: 200 })))
+      const provider = new CodexSearchProvider(() => ({
+        endpoint: 'https://search.example/alpha/search',
+        model: 'gpt-5.2',
+        apiKeyRef: 'CODEX_SEARCH_API_KEY',
+        resolveApiKey: async () => 'secret',
+        resolveSessionModel: () => undefined,
+      }))
+
+      await expect(provider.search({ query: 'invalid response shape' })).rejects.toMatchObject({
+        code: 'CODEX_SEARCH_PROTOCOL_ERROR',
+      })
+    },
+  )
+
+  it('fails before dispatch when the configured credential is missing', async () => {
+    const fetchMock = vi.fn<typeof fetch>()
+    vi.stubGlobal('fetch', fetchMock)
+    const provider = new CodexSearchProvider(() => ({
+      endpoint: 'https://search.example/alpha/search',
+      model: 'gpt-5.2',
+      apiKeyRef: 'CODEX_SEARCH_API_KEY',
+      resolveApiKey: async () => undefined,
+      resolveSessionModel: () => undefined,
+    }))
+
+    await expect(provider.search({ query: 'missing credential' })).rejects.toMatchObject({
+      code: 'CODEX_SEARCH_CREDENTIAL_MISSING',
+    })
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('rejects a non-string output even when valid sources are present', async () => {
+    vi.stubGlobal('fetch', vi.fn<typeof fetch>(async () => new Response(JSON.stringify({
+      output: 42,
+      results: [{ url: 'https://example.com/source' }],
+    }), { status: 200 })))
+    const provider = new CodexSearchProvider(() => ({
+      endpoint: 'https://search.example/alpha/search',
+      model: 'gpt-5.2',
+      apiKeyRef: 'CODEX_SEARCH_API_KEY',
+      resolveApiKey: async () => 'secret',
+      resolveSessionModel: () => undefined,
+    }))
+
+    await expect(provider.search({ query: 'invalid output' })).rejects.toMatchObject({
+      code: 'CODEX_SEARCH_PROTOCOL_ERROR',
+    })
+  })
+
+  it('rejects non-array results even when output is valid', async () => {
+    vi.stubGlobal('fetch', vi.fn<typeof fetch>(async () => new Response(JSON.stringify({
+      output: 'answer',
+      results: { url: 'https://example.com/source' },
+    }), { status: 200 })))
+    const provider = new CodexSearchProvider(() => ({
+      endpoint: 'https://search.example/alpha/search',
+      model: 'gpt-5.2',
+      apiKeyRef: 'CODEX_SEARCH_API_KEY',
+      resolveApiKey: async () => 'secret',
+      resolveSessionModel: () => undefined,
+    }))
+
+    await expect(provider.search({ query: 'invalid results' })).rejects.toMatchObject({
+      code: 'CODEX_SEARCH_PROTOCOL_ERROR',
+    })
   })
 
   it('maps a fetch AbortError to WEB_ABORTED', async () => {

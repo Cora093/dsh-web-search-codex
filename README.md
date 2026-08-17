@@ -26,4 +26,3 @@ dsh --profile web --dump-config
 - 不自动回退 DeepSeek Provider。
 - 不维护模型 allowlist，也不自动替换服务端不支持的模型。
 - live sub2api 验收需要用户显式提供测试 Endpoint 与 Key。
-

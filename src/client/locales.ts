@@ -53,4 +53,3 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
     'web-search-codex': CodexLocaleKey
   }
 }
-
