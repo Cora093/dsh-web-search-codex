@@ -1,0 +1,10 @@
+- id: web
+  config:
+    searchProvider: codex
+
+- insert:
+    - id: web-search-codex
+      name: dsh-web-search-codex
+      config:
+        apiKeyEnv: CODEX_SEARCH_API_KEY
+
