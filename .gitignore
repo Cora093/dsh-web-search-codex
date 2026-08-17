@@ -3,3 +3,6 @@ node_modules/
 *.tgz
 .playwright-cli/
 coverage/
+
+.codex
+.claude
