@@ -14,6 +14,7 @@ import { en, zh } from './locales.ts'
 import { CLIENT_SLOT_ID } from '../shared.ts'
 
 const LOCALE_NAMESPACE = 'web-search-codex'
+const SLOT_IDENTITY = { key: CLIENT_SLOT_ID, id: CLIENT_SLOT_ID }
 
 export interface CodexCardFace {
   hooks: {
@@ -38,7 +39,7 @@ export function apply(ctx: ClientContext): void {
 
   ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
     name: 'settings.plugin.item',
-    id: CLIENT_SLOT_ID,
+    ...SLOT_IDENTITY,
     order: 30,
     locale: LOCALE_NAMESPACE,
     inject: (): CodexCardFace => ({

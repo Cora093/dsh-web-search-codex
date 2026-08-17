@@ -8,7 +8,7 @@ afterEach(() => {
 })
 
 describe('client plugin lifecycle', () => {
-  it('registers cleanup for its slot, locales, and in-flight controller request', async () => {
+  it('registers its keyed slot and cleans up locales and in-flight requests', async () => {
     let requestSignal: AbortSignal | undefined
     vi.stubGlobal('fetch', vi.fn((_input: RequestInfo | URL, init?: RequestInit) => {
       requestSignal = init?.signal ?? undefined
@@ -21,7 +21,10 @@ describe('client plugin lifecycle', () => {
     const localeRegister = vi.fn()
       .mockReturnValueOnce(disposeZh)
       .mockReturnValueOnce(disposeEn)
-    const slotRegister = vi.fn(() => disposeSlot)
+    const slotRegister = vi.fn((options: { name: string; key?: string }) => {
+      if (options.key === undefined) throw new Error(`keyed slot "${options.name}" requires options.key`)
+      return disposeSlot
+    })
     const slotInject = vi.fn((_name: string, setup: () => () => void) => {
       const cleanup = setup()
       cleanups.push(cleanup)
@@ -45,6 +48,7 @@ describe('client plugin lifecycle', () => {
     expect(slotInject).toHaveBeenCalledWith('settings.plugin.item', expect.any(Function))
     expect(slotRegister).toHaveBeenCalledWith(expect.objectContaining({
       name: 'settings.plugin.item',
+      key: CLIENT_SLOT_ID,
       id: CLIENT_SLOT_ID,
     }), expect.any(Function))
     expect(localeRegister.mock.calls.map(call => call.slice(0, 2))).toEqual([
