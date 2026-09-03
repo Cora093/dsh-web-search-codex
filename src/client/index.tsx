@@ -1,5 +1,6 @@
 import type {} from '@deepseek-ai/dsh-client-locale/client'
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
+import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
 import { CodexSearchCard } from './CodexSearchCard.tsx'
@@ -40,7 +41,7 @@ export function apply(ctx: ClientContext): void {
   ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
     name: 'settings.plugin.item',
     ...SLOT_IDENTITY,
-    order: 30,
+    priority: 30,
     locale: LOCALE_NAMESPACE,
     inject: (): CodexCardFace => ({
       hooks: { codexSearchCard: controller },

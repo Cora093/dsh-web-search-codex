@@ -4,7 +4,7 @@ import type {} from '@deepseek-ai/dsh-agent'
 import { credentialRef } from '@deepseek-ai/dsh-credentials'
 import type {} from '@deepseek-ai/dsh-host-webserver'
 import type {} from '@deepseek-ai/dsh-session'
-import { SettingsConflictError, settingsNamespace } from '@deepseek-ai/dsh-settings'
+import { SettingsConflictError } from '@deepseek-ai/dsh-settings'
 import type {} from '@deepseek-ai/dsh-web'
 import z from '@deepseek-ai/schemastery'
 import { HostSettingsController, type CredentialsLike, type SettingsLike } from './host-settings.ts'
@@ -123,7 +123,7 @@ export function apply(ctx: Context, config: Config = {}): void {
   let current = (): Config => config
   let settingsController: HostSettingsController | undefined
   const credentials = credentialFace(ctx)
-  const namespace = settingsNamespace(SETTINGS_NAMESPACE)
+  const namespace = SETTINGS_NAMESPACE
 
   ctx.inject(['settings'], (settingsContext) => {
     const settings = settingsContext.settings

@@ -1,25 +1,25 @@
 .card {
   list-style: none;
-  border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 8px;
+  border: 0.5px solid var(--dsw-alias-border-l4);
+  border-radius: 16px;
   background: var(--dsw-alias-bg-layer-3);
   transition: border-color 160ms, background 160ms;
 }
 
-.card:hover,
-.cardOpen {
+.card:hover {
   border-color: var(--dsw-alias-label-dimmed);
 }
 
 .cardOpen {
   background: var(--dsw-alias-bg-layer-2);
+  border-color: var(--dsw-alias-label-dimmed);
 }
 
 .header {
   width: 100%;
   appearance: none;
   border: 0;
-  border-radius: 8px;
+  border-radius: 12px;
   background: none;
   color: inherit;
   font: inherit;
@@ -31,7 +31,11 @@
   padding: 14px 16px;
 }
 
-.header:focus-visible,
+.header:focus-visible {
+  outline: 2px solid var(--dsw-alias-brand-primary);
+  outline-offset: -2px;
+}
+
 .credentialMode:focus-visible,
 .restore:focus-visible,
 .discard:focus-visible,
@@ -52,12 +56,14 @@
 .label {
   color: var(--dsw-alias-label-primary);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.5;
 }
 
 .name {
   font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
 }
 
 .description,
@@ -85,6 +91,7 @@
 .pending {
   color: var(--dsw-alias-label-secondary);
   background: var(--dsw-alias-bg-module-platform);
+  font-weight: 500;
 }
 
 .chevron {
@@ -100,22 +107,22 @@
 .body {
   margin: 0 16px;
   padding-bottom: 8px;
-  border-top: 1px solid var(--dsw-alias-border-l2);
+  border-top: 0.5px solid var(--dsw-alias-border-l2);
 }
 
 .readOnly {
-  padding-top: 12px;
+  margin-top: 12px;
 }
 
 .field {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 10px 0;
+  padding: 12px 0;
 }
 
 .field + .field {
-  padding-top: 2px;
+  border-top: 0.5px solid var(--dsw-alias-border-l2);
 }
 
 .fieldHead,
@@ -138,8 +145,8 @@
   flex: none;
   display: inline-flex;
   padding: 2px;
-  border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 6px;
+  border: 0.5px solid var(--dsw-alias-border-l4);
+  border-radius: 8px;
   background: var(--dsw-alias-bg-layer-3);
 }
 
@@ -147,7 +154,7 @@
   min-width: 72px;
   appearance: none;
   border: 0;
-  border-radius: 4px;
+  border-radius: 6px;
   padding: 3px 10px;
   background: transparent;
   color: var(--dsw-alias-label-tertiary);
@@ -167,8 +174,8 @@
   width: 100%;
   height: 34px;
   padding: 0 12px;
-  border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 6px;
+  border: 0.5px solid var(--dsw-alias-border-l4);
+  border-radius: 8px;
   background: var(--dsw-alias-bg-layer-3);
   color: var(--dsw-alias-label-primary);
   font: inherit;
@@ -191,15 +198,26 @@
 .save {
   flex: none;
   appearance: none;
-  border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 6px;
-  padding: 5px 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 5px 14px;
   background: none;
   color: var(--dsw-alias-label-secondary);
   font: inherit;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.5;
   cursor: pointer;
+}
+
+.restore,
+.discard {
+  border-color: var(--dsw-alias-border-l2);
+}
+
+.restore:hover:not(:disabled),
+.discard:hover:not(:disabled) {
+  color: var(--dsw-alias-label-primary);
+  border-color: var(--dsw-alias-label-dimmed);
 }
 
 .save {
@@ -227,7 +245,7 @@
 .footer {
   justify-content: flex-end;
   padding: 12px 0 4px;
-  border-top: 1px solid var(--dsw-alias-border-l2);
+  border-top: 0.5px solid var(--dsw-alias-border-l2);
 }
 
 .restore {

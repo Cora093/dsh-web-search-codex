@@ -1,3 +1,4 @@
+import type { ObservableSnapshot } from '@deepseek-ai/dsh-client-store'
 import type { CodexSettingsSave, CodexSettingsView, CredentialSource, CredentialView } from '../shared.ts'
 import type { CodexSettingsApi } from './api.ts'
 
@@ -26,10 +27,7 @@ export interface CodexCardState {
   readonly openAIReuse: OpenAIReuseState
 }
 
-export interface SnapshotSource<T> {
-  getSnapshot(): T
-  subscribe(listener: () => void): () => void
-}
+export type SnapshotSource<T> = ObservableSnapshot<T>
 
 const INITIAL_STATE: CodexCardState = {
   available: false,
